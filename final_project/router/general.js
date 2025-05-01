@@ -65,10 +65,35 @@ public_users.get('/author/:author', function (req, res) {
   }
 });
 
-// Get all books based on title
-public_users.get('/title/:title',function (req, res) {
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
+public_users.get('/title/:title', function (req, res) {
+  const searchTitle = req.params.title.toLowerCase(); // Get and normalize search title
+  const matchingBooks = [];
+
+  // Iterate through all books
+  for (const [isbn, book] of Object.entries(books)) {
+    // Check if title matches (case insensitive, partial match)
+    if (book.title.toLowerCase().includes(searchTitle)) {
+      matchingBooks.push({
+        isbn: isbn,
+        title: book.title,
+        author: book.author,
+        reviews: book.reviews
+      });
+    }
+  }
+
+  if (matchingBooks.length > 0) {
+    return res.status(200).json({
+      count: matchingBooks.length,
+      message: `Found ${matchingBooks.length} book(s) with matching title`,
+      books: matchingBooks
+    });
+  } else {
+    return res.status(404).json({ 
+      message: `No books found containing title: "${req.params.title}"`,
+      suggestion: "Try a different search term or check the spelling"
+    });
+  }
 });
 
 // Get book review
