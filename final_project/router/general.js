@@ -120,34 +120,49 @@ public_users.get('/author/:author', function (req, res) {
 });
 
 public_users.get('/title/:title', function (req, res) {
-  const searchTitle = req.params.title.toLowerCase(); // Get and normalize search title
-  const matchingBooks = [];
-
-  // Iterate through all books
-  for (const [isbn, book] of Object.entries(books)) {
-    // Check if title matches (case insensitive, partial match)
-    if (book.title.toLowerCase().includes(searchTitle)) {
-      matchingBooks.push({
-        isbn: isbn,
-        title: book.title,
-        author: book.author,
-        reviews: book.reviews
+  const searchTitle = req.params.title.toLowerCase();
+  
+  new Promise((resolve, reject) => {
+    process.nextTick(() => {
+      const matchingBooks = [];
+      
+      // Convert books object to array of [isbn, book] pairs
+      Object.entries(books).forEach(([isbn, book]) => {
+        if (book.title.toLowerCase().includes(searchTitle)) {
+          matchingBooks.push({
+            isbn: isbn,
+            title: book.title,
+            author: book.author,
+            reviews: book.reviews
+          });
+        }
       });
-    }
-  }
 
-  if (matchingBooks.length > 0) {
-    return res.status(200).json({
-      count: matchingBooks.length,
-      message: `Found ${matchingBooks.length} book(s) with matching title`,
-      books: matchingBooks
+      if (matchingBooks.length > 0) {
+        resolve({
+          count: matchingBooks.length,
+          books: matchingBooks,
+          searchTerm: req.params.title  // Keep original case for response
+        });
+      } else {
+        reject(new Error(`No books found containing title: "${req.params.title}"`));
+      }
     });
-  } else {
-    return res.status(404).json({ 
-      message: `No books found containing title: "${req.params.title}"`,
+  })
+  .then(result => {
+    res.status(200).json({
+      count: result.count,
+      message: `Found ${result.count} book(s) with matching title`,
+      books: result.books,
+      searchTerm: result.searchTerm
+    });
+  })
+  .catch(err => {
+    res.status(404).json({ 
+      message: err.message,
       suggestion: "Try a different search term or check the spelling"
     });
-  }
+  });
 });
 
 public_users.get('/review/:isbn', function (req, res) {
