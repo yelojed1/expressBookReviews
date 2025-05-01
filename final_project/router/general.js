@@ -55,17 +55,27 @@ public_users.get('/', function (req, res) {
 });
 
 public_users.get('/isbn/:isbn', function (req, res) {
-  // Retrieve the ISBN from request parameters
   const isbn = req.params.isbn;
   
-  // Check if book exists with the given ISBN
-  if (books[isbn]) {
-    // Return the book details as a neatly formatted JSON response
-    return res.status(200).json(JSON.stringify(books[isbn], null, 4));
-  } else {
-    // Return error if book not found
+  // Create a new Promise
+  new Promise((resolve, reject) => {
+    // Simulate async operation with process.nextTick
+    process.nextTick(() => {
+      if (books[isbn]) {
+        resolve(books[isbn]);
+      } else {
+        reject(new Error("Book not found"));
+      }
+    });
+  })
+  .then(book => {
+    // Success case
+    return res.status(200).json(JSON.stringify(book, null, 4));
+  })
+  .catch(err => {
+    // Error case
     return res.status(404).json({message: "Book not found with ISBN: " + isbn});
-  }
+  });
 });
 
 public_users.get('/author/:author', function (req, res) {
